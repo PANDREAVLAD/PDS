@@ -54,3 +54,23 @@ int main() {
 
 	fwrite(&header, sizeof(header), 1, file_out);
 	fwrite(&chunk, sizeof(chunk), 1, file_out);
+
+
+	fread(&chunk, sizeof(chunk), 1, file_in);
+	
+	uint16_t sample_size = header.BitsPreSample / 8;
+	uint32_t samples_count = chunk.size / sample_size;
+
+	fwrite(&header, sizeof(header), 1, file_out);
+	fwrite(&chunk, sizeof(chunk), 1, file_out);
+
+	int16_t s_buf[2*SIZE];
+	while (1)
+	{
+		size_t read_size = fread(s_buf, 2*sample_size, 128, file_in);
+		for (int n = 0; n < sample_size; n++) {
+			output =  IIR(sample_buffer)
+
+		}
+	....
+	}
