@@ -88,6 +88,10 @@ int main() {
 	while (1)
 	{
 		size_t read_size = fread(s_buf, 2*sample_size, 128, file_in);
+		
+		if (!read_size)
+			break;
+		
 		for (int n = 0; n < read_size; n++) {
 
 			outputL = IIR(sample_buffer_L, coeffs,s_buf[2*n]);
