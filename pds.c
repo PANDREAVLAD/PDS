@@ -20,7 +20,12 @@ int32_t flt2fixd(double x)
 	return res;
 }
 
-
+float fixd2flt(int32_t x)
+{
+	float res = (float)(x) / ((float)Q31_1_BASE);
+	return res;
+	return res;
+}
 
 struct HEADER
 {
@@ -53,9 +58,9 @@ void coeffscalc(int32_t* coeffs, double* coeffs_double, float filterfreq, int32_
 	norm = 1.0 / (1.0 + K / Q + K2);
 	a0 = K2 * norm;
 	a1 = 2 * a0;
-	a2 = a1;
-	b1 = 2 * (K2 - 1);
-	b2 = (1 - K / Q + K2);
+	a2 = a0;
+	b1 = 2 * (K2 - 1) * norm;
+	b2 = (1 - K / Q + K2) * norm;
 
 	coeffs_double[0] = a0;
 	coeffs_double[1] = a1;
@@ -80,11 +85,11 @@ int32_t IIR(int32_t* buffer, int32_t* coeffs,int16_t sample)
 	buffer[3] = buffer[4];
 	buffer[4] = buffer[5];
 
-	acc += (int64_t)buffer[2]  * coeffs[1] + (int64_t)buffer[0] * coeffs[2] - (int64_t)buffer[4] * coeffs[3] - (int64_t)buffer[3] * coeffs[4];
+	acc += (int64_t)buffer[2] * coeffs[0] + (int64_t)buffer[1] * coeffs[1] + (int64_t)buffer[0] * coeffs[2] - (int64_t)buffer[4] * coeffs[3] - (int64_t)buffer[3] * coeffs[4];
 
 	buffer[5] = (acc >> 30);
 	acc = acc & 0x3fffffff;
-	return buffer[];
+	return buffer[5];
 }
 
 int main() {
