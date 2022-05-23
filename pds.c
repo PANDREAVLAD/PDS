@@ -9,6 +9,9 @@
 #define SIZE (128)
 #define PI (3.14159265358979323846)
 
+/*
+ * float to int convert function
+*/
 int32_t flt2fixd(double x)
 {
 	if (x >= 1)
@@ -20,6 +23,9 @@ int32_t flt2fixd(double x)
 	return res;
 }
 
+/*
+ * int to float convert function
+*/
 float fixd2flt(int32_t x)
 {
 	float res = (float)(x) / ((float)Q31_1_BASE);
@@ -27,6 +33,8 @@ float fixd2flt(int32_t x)
 	return res;
 }
 
+/*wavfile header
+*/
 struct HEADER
 {
 	uint8_t ChunkID[4];
@@ -42,12 +50,18 @@ struct HEADER
 	uint16_t BitsPreSample;
 };
 
+/*
+ * chunk data
+*/
 struct CHUNK
 {
 	uint8_t ID[4];
 	uint32_t size;
 };
 
+/*
+ * calculate coeffscale value
+*/
 void coeffscalc(int32_t* coeffs, double* coeffs_double, float filterfreq, int32_t samplerate, float Q)
 {
 	double a0, a1, a2, b1, b2, norm;
@@ -77,7 +91,10 @@ void coeffscalc(int32_t* coeffs, double* coeffs_double, float filterfreq, int32_
 
 int64_t acc = 0;
 
-int32_t IIR(int32_t* buffer, int32_t* coeffs,int16_t sample)
+/*
+ * iir filter buffer
+*/
+int32_t IIR(int32_t* buffer, int32_t* coeffs, int16_t sample)
 {
 	buffer[0] = buffer[1];
 	buffer[1] = buffer[2];
@@ -99,37 +116,43 @@ int main() {
 	struct HEADER header;
 	struct CHUNK chunk;
 
+	/* type input wav file name */
 	int8_t filename[30];
 	puts("Enter filename:");
 	gets(filename);
 
-	fopen_s(&file_in, filename, "rb");
-	fopen_s(&file_out, "filteredwave.wav", "wb");
-
+	/* open input and output wav file */
+	file_in = fopen(filename, "rb");
+	file_out = fopen("filteredwave.wav", "wb");
+	
+	/* read input data to header */
 	fread(&header, sizeof(header), 1, file_in);
 
+	/* print info */
 	printf("NumChannels=%i\n", header.NumChannels);
 	printf("SampleRate=%i\n", header.SampleRate);
 	printf("BitsPreSample=%i\n", header.BitsPreSample);
 
+	/* check wav file is 16bit or not. */
 	if (header.BitsPreSample != 16) {
-		printf("Audiofile isn't 16bit\n");
-		system("pause");
+		printf("Audiofile isn't 16bit\n");		
 		return 0;
 	}
-
-	fread(&chunk, sizeof(chunk), 1, file_in);
 	
+	/* read input data to chunk */
+	fread(&chunk, sizeof(chunk), 1, file_in);
+
 	uint16_t sample_size = header.BitsPreSample / 8;
 	uint32_t samples_count = chunk.size / sample_size;
 	printf("Samples=%d\n", samples_count);
 
+	/* write header and chunk buffer for wav file*/
 	fwrite(&header, sizeof(header), 1, file_out);
 	fwrite(&chunk, sizeof(chunk), 1, file_out);
 
 	int32_t sample_buffer_L[6] = { 0, 0, 0, 0, 0, 0 };
 	int32_t sample_buffer_R[6] = { 0, 0, 0, 0, 0, 0 };
-	int16_t s_buf[2*SIZE];
+	int16_t s_buf[2 * SIZE];
 	int16_t outputL;
 	int16_t outputR;
 	int16_t signalL;
@@ -152,25 +175,28 @@ int main() {
 
 	while (1)
 	{
-		size_t read_size = fread(s_buf, 2*sample_size, 128, file_in);
+		/*read input data 128size*/
+		size_t read_size = fread(s_buf, 2 * sample_size, 128, file_in);
 
 		if (!read_size)
 			break;
 
+		/*iir filter*/
 		for (int n = 0; n < read_size; n++) {
 
-			outputL =  IIR(sample_buffer_L, coeffs,s_buf[2*n]);
+			outputL = IIR(sample_buffer_L, coeffs, s_buf[2 * n]);
 			outputR = IIR(sample_buffer_R, coeffs, s_buf[2 * n + 1]);
 
-			s_buf[2*n] = outputL;
+			s_buf[2 * n] = outputL;
 			s_buf[2 * n + 1] = outputR;
 		}
-		fwrite(s_buf, 2*sample_size, read_size, file_out);
+		/* write filtered data*/
+		fwrite(s_buf, 2 * sample_size, read_size, file_out);
 	}
 
+	/*close opend files*/
 	fclose(file_in);
 	fclose(file_out);
-	printf("\n WAV file has been filtered.\n");
-	system("pause");
+	printf("\n WAV file has been filtered.\n");	
 	return 0;
 }
